@@ -21,14 +21,14 @@
     },
     "require": {
         "php": "^7",
-        "ext-json": "^1",
-        "symfony/symfony": "^3",
+        "ext-json": "*",
+        "symfony/symfony": "^3|^4|^5",
         "google/protobuf": "^3",
         "psr/http-message": "^1",
         "guzzlehttp/guzzle": "^6"
     },
     "require-dev": {
-        "symfony/phpunit-bridge": "^3",
+        "symfony/phpunit-bridge": "^3|^4|^5",
         "phpunit/phpunit": "^7"
     }
 }
