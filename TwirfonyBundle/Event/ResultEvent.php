@@ -2,11 +2,10 @@
 
 namespace Twirfony\TwirfonyBundle\Event;
 
-use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\HttpFoundation\Request;
 use Google\Protobuf\Internal\Message;
 
-class ResultEvent extends Event
+class ResultEvent extends \Symfony\Contracts\EventDispatcher\Event
 {
     const NAME = 'twirp.rpc_result';
 

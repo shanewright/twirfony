@@ -2,11 +2,10 @@
 
 namespace Twirfony\TwirfonyBundle\Event;
 
-use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\HttpFoundation\Request;
 use Google\Protobuf\Internal\Message;
 
-class ErrorEvent extends Event
+class ErrorEvent extends \Symfony\Contracts\EventDispatcher\Event
 {
     const NAME = 'twirp.rpc_error';
 
