@@ -2,8 +2,13 @@
 
 namespace Twirfony\TwirfonyBundle\Controller;
 
+use Psr\Log\LoggerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ContainerAwareInterface;
+use Symfony\Component\DependencyInjection\ContainerAwareTrait;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Throwable;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Google\Protobuf\Internal\Message;
@@ -12,14 +17,16 @@ use Twirfony\TwirfonyBundle\Event\RequestEvent;
 use Twirfony\TwirfonyBundle\Event\ResultEvent;
 use Twirfony\TwirpError;
 
-class TwirpController extends Controller
+class TwirpController implements ContainerAwareInterface
 {
 
-    public function rpcAction(Request $request)
+	use ContainerAwareTrait;
+
+    public function rpcAction(Request $request, LoggerInterface $logger, EventDispatcherInterface $eventDispatcher)
     {
         $inputType = $request->attributes->get('inputType');
         $serviceId = $request->attributes->get('service');
-        $service = $this->get($serviceId);
+        $service = $this->container->get($serviceId);
         $method = $request->attributes->get('method');
 
         $input = null;
@@ -34,9 +41,9 @@ class TwirpController extends Controller
                 $input->mergeFromString($request->getContent());
             }
 
-            $this->get('event_dispatcher')->dispatch(RequestEvent::NAME, new RequestEvent($request, $serviceId, $method, $input));
+            $eventDispatcher->dispatch(new RequestEvent($request, $serviceId, $method, $input), RequestEvent::NAME);
             $output = $service->$method($input);
-            $this->get('event_dispatcher')->dispatch(ResultEvent::NAME, new ResultEvent($request, $serviceId, $method, $input, $output));
+	        $eventDispatcher->dispatch(new ResultEvent($request, $serviceId, $method, $input, $output), ResultEvent::NAME);
 
             $response = new Response();
 
@@ -50,14 +57,14 @@ class TwirpController extends Controller
             return $response;
 
         } catch (TwirpError $e) {
-            $this->get('event_dispatcher')->dispatch(ErrorEvent::NAME, new ErrorEvent($request, $serviceId, $method, $input, $e));
+	        $eventDispatcher->dispatch(new ErrorEvent($request, $serviceId, $method, $input, $e), ErrorEvent::NAME);
             return $this->errorResponse($e);
 
         } catch (Throwable $e) {
-            $this->get('logger')->err($e->getMessage(), [
+            $logger->err($e->getMessage(), [
                 'exception' => $e
             ]);
-            $this->get('event_dispatcher')->dispatch(ErrorEvent::NAME, new ErrorEvent($request, $serviceId, $method, $input, $e));
+	        $eventDispatcher->dispatch(new ErrorEvent($request, $serviceId, $method, $input, $e), ErrorEvent::NAME);
             return $this->errorResponse(TwirpError::internalErrorWith($e));
         }
     }
